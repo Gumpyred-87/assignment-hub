@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  googleId      String?   @unique
+  image         String?
+  role          String    @default("student") // student | admin
+  plan          String    @default("free") // free | pro | team
+  planExpiresAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  projects      Project[]
+  subscriptions Subscription[]
+  usageLogs     UsageLog[]
+  sessions      Session[]
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  title       String
+  subject     String
+  topic       String
+  type        String
+  level       String
+  wordCount   Int?
+  tone        String
+  citation    String
+  deadline    DateTime?
+  status      String    @default("draft") // draft | outline | drafting | complete
+  outline     Outline?
+  sections    Section[]
+  sources     Source[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, updatedAt])
+}
+
+model Outline {
+  id        String    @id @default(cuid())
+  projectId String    @unique
+  data      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  projectId String
+  order     Int
+  heading   String
+  content   String
+  wordBudget Int?
+  versions  Json     @default("[]") // [{content, timestamp, label}]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, order])
+}
+
+model Source {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String // pdf | url | text | sample
+  title     String
+  url       String?
+  content   String? // extracted text
+  fileKey   String? // storage key
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  category    String
+  structure   Json
+  createdAt   DateTime @default(now())
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  plan      String
+  status    String // active | canceled | past_due
+  stripeId  String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UsageLog {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  action    String
+  metadata   Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
