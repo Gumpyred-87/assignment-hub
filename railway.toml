@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+runCommand = "npm start"
+
+[env]
+PORT = "3000"
